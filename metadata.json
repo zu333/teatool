@@ -1,0 +1,6 @@
+{
+  "name": "Tooltea",
+  "description": "An aesthetic web tool hub with an elegant matcha tea theme, featuring interactive utilities and an integrated content management admin panel.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

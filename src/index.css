@@ -1,0 +1,85 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", "Outfit", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+  
+  --color-matcha-50: #f0f6fa;
+  --color-matcha-100: #e2eef6;
+  --color-matcha-200: #cfe3f1;
+  --color-matcha-300: #b0d0e7;
+  --color-matcha-400: #88b7da;
+  --color-matcha-500: #5c9bc9;
+  --color-matcha-600: #2a6f97; /* Primary Tea Blue / Soft Ocean Blue */
+  --color-matcha-700: #1d4e6b;
+  --color-matcha-800: #123245;
+  --color-matcha-900: #0a1d29;
+
+  --color-terracotta-50: #f4f9fd;
+  --color-terracotta-100: #e6f0fa;
+  --color-terracotta-500: #4a90e2; /* Sky/Ocean Accent */
+  --color-terracotta-600: #357abd;
+}
+
+/* Steam rising animations */
+@keyframes steam-rise-odd {
+  0% {
+    transform: translateY(4px) scaleX(0.8);
+    opacity: 0;
+  }
+  20% {
+    opacity: 0.7;
+  }
+  50% {
+    transform: translateY(-8px) scaleX(1.2);
+    opacity: 0.5;
+  }
+  80% {
+    opacity: 0.2;
+  }
+  100% {
+    transform: translateY(-20px) scaleX(0.7);
+    opacity: 0;
+  }
+}
+
+@keyframes steam-rise-even {
+  0% {
+    transform: translateY(6px) scaleX(0.9);
+    opacity: 0;
+  }
+  20% {
+    opacity: 0.8;
+  }
+  50% {
+    transform: translateY(-12px) scaleX(1.1);
+    opacity: 0.4;
+  }
+  80% {
+    opacity: 0.1;
+  }
+  100% {
+    transform: translateY(-24px) scaleX(0.8);
+    opacity: 0;
+  }
+}
+
+.animate-steam-1 {
+  animation: steam-rise-odd 4s infinite linear;
+}
+
+.animate-steam-2 {
+  animation: steam-rise-even 3.5s infinite linear;
+  animation-delay: 1.2s;
+}
+
+.animate-steam-3 {
+  animation: steam-rise-odd 4.5s infinite linear;
+  animation-delay: 2.4s;
+}
+
+/* Background patterns */
+.pattern-tea-dots {
+  background-image: radial-gradient(#b0d0e7 0.75px, transparent 0.75px);
+  background-size: 16px 16px;
+}
