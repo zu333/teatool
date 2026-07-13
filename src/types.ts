@@ -18,6 +18,9 @@ export interface AdSettings {
   topBanner: string; // Banner link or HTML script
   belowTools: string;
   sidebar: string;
+  monetagEnabled?: boolean;
+  monetagDomain?: string;
+  monetagZoneId?: string;
 }
 
 export interface AppState {

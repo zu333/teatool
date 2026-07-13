@@ -70,4 +70,7 @@ export const DEFAULT_ADS: AdSettings = {
   topBanner: "", // empty by default -> hidden
   belowTools: "", // empty by default -> hidden
   sidebar: "", // empty by default -> hidden
+  monetagEnabled: true,
+  monetagDomain: "5gvci.com",
+  monetagZoneId: "11277946",
 };

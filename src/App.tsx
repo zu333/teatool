@@ -12,8 +12,10 @@ import ToolRenderer from "./components/ToolRenderer";
 import AdContainer from "./components/AdContainer";
 import { 
   Search, Shield, X, ChevronRight, Home, ExternalLink, 
-  Wrench, Coffee, HelpCircle, ArrowRight, Sparkles 
+  Wrench, Coffee, HelpCircle, ArrowRight, Sparkles, Database
 } from "lucide-react";
+import { db } from "./lib/firebase";
+import { doc, setDoc, onSnapshot } from "firebase/firestore";
 
 export default function App() {
   // --- Persistent State Hooks ---
@@ -83,6 +85,108 @@ export default function App() {
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
 
+  // --- Firebase Cloud Sync State ---
+  const [firebaseStatus, setFirebaseStatus] = useState<"connecting" | "synced" | "error" | "local">("connecting");
+
+  // Real-time Firestore sync
+  useEffect(() => {
+    const docRef = doc(db, "app_data", "settings");
+    
+    setFirebaseStatus("connecting");
+    
+    const unsubscribe = onSnapshot(docRef, (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        if (data.tools) setTools(data.tools);
+        if (data.headerImage) setHeaderImage(data.headerImage);
+        if (data.footerLinks) setFooterLinks(data.footerLinks);
+        if (data.ads) setAds(data.ads);
+        if (data.showHeroText !== undefined) setShowHeroText(data.showHeroText);
+        if (data.heroTitle !== undefined) setHeroTitle(data.heroTitle);
+        if (data.heroSubtitle !== undefined) setHeroSubtitle(data.heroSubtitle);
+        setFirebaseStatus("synced");
+      } else {
+        // First run: Seed Firestore with local state or defaults
+        setFirebaseStatus("local");
+        setDoc(docRef, {
+          tools: DEFAULT_TOOLS,
+          headerImage: DEFAULT_HEADER_IMAGE,
+          footerLinks: DEFAULT_FOOTER_LINKS,
+          ads: DEFAULT_ADS,
+          showHeroText: true,
+          heroTitle: "Brewing Simplicity for Your Workflow.",
+          heroSubtitle: "Welcome to Tooltea, a serene sanctuary featuring essential, highly responsive web tools styled with calming, soft light-blue tones."
+        }).then(() => {
+          setFirebaseStatus("synced");
+        }).catch((err) => {
+          console.error("Firebase seeding failed:", err);
+          setFirebaseStatus("error");
+        });
+      }
+    }, (error) => {
+      console.error("Firebase subscription error:", error);
+      setFirebaseStatus("error");
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  const saveToFirebase = async (updates: Partial<{
+    tools: Tool[];
+    headerImage: string;
+    footerLinks: FooterLink[];
+    ads: AdSettings;
+    showHeroText: boolean;
+    heroTitle: string;
+    heroSubtitle: string;
+  }>) => {
+    try {
+      setFirebaseStatus("connecting");
+      const docRef = doc(db, "app_data", "settings");
+      await setDoc(docRef, updates, { merge: true });
+      setFirebaseStatus("synced");
+    } catch (e) {
+      console.error("Failed to save to Firebase:", e);
+      setFirebaseStatus("error");
+    }
+  };
+
+  // State update wrapper handlers for Firestore
+  const handleUpdateHeaderImage = (url: string) => {
+    setHeaderImage(url);
+    saveToFirebase({ headerImage: url });
+  };
+
+  const handleUpdateTools = (newTools: Tool[]) => {
+    setTools(newTools);
+    saveToFirebase({ tools: newTools });
+  };
+
+  const handleUpdateFooterLinks = (links: FooterLink[]) => {
+    setFooterLinks(links);
+    saveToFirebase({ footerLinks: links });
+  };
+
+  const handleUpdateAds = (newAds: AdSettings) => {
+    setAds(newAds);
+    saveToFirebase({ ads: newAds });
+  };
+
+  const handleUpdateShowHeroText = (val: boolean) => {
+    setShowHeroText(val);
+    saveToFirebase({ showHeroText: val });
+  };
+
+  const handleUpdateHeroTitle = (val: string) => {
+    setHeroTitle(val);
+    saveToFirebase({ heroTitle: val });
+  };
+
+  const handleUpdateHeroSubtitle = (val: string) => {
+    setHeroSubtitle(val);
+    saveToFirebase({ heroSubtitle: val });
+  };
+
   // --- Write to LocalStorage on state changes ---
   useEffect(() => {
     try {
@@ -113,6 +217,30 @@ export default function App() {
       localStorage.setItem("tooltea_ads", JSON.stringify(ads));
     } catch (e) {
       console.warn("Could not save ads to localStorage:", e);
+    }
+
+    // Dynamic Monetag smart script injector
+    try {
+      // Remove any existing monetag script
+      const existingScript = document.getElementById("monetag-smart-tag");
+      if (existingScript) {
+        existingScript.remove();
+      }
+
+      if (ads && ads.monetagEnabled) {
+        const domain = ads.monetagDomain || "5gvci.com";
+        const zoneId = ads.monetagZoneId || "11277946";
+        
+        const script = document.createElement("script");
+        script.id = "monetag-smart-tag";
+        script.src = `https://${domain}/act/files/service-worker.min.js?r=sw&z=${zoneId}`;
+        script.setAttribute("data-zone", String(zoneId));
+        script.defer = true;
+        document.head.appendChild(script);
+        console.log(`Monetag SDK injected successfully (Zone: ${zoneId}, Domain: ${domain})`);
+      }
+    } catch (err) {
+      console.error("Failed to inject Monetag script:", err);
     }
   }, [ads]);
 
@@ -210,14 +338,47 @@ export default function App() {
             </div>
           </div>
 
-          <button
-            id="nav-home-btn"
-            onClick={handleHomeClick}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 bg-white/10 hover:bg-white/20 backdrop-blur-xs border border-white/20 rounded-xl text-xs font-semibold tracking-wide uppercase transition-all shadow-sm cursor-pointer"
-          >
-            <Home className="w-3.5 h-3.5" />
-            Home
-          </button>
+          <div className="flex items-center gap-2">
+            {/* Firebase cloud database sync status indicator */}
+            <div 
+              id="firebase-sync-badge"
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-[10px] font-bold uppercase transition-all shadow-xs ${
+                firebaseStatus === "synced"
+                  ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/30"
+                  : firebaseStatus === "connecting"
+                  ? "bg-amber-500/15 text-amber-300 border-amber-500/30 animate-pulse"
+                  : firebaseStatus === "error"
+                  ? "bg-red-500/15 text-red-300 border-red-500/30"
+                  : "bg-stone-500/15 text-stone-300 border-stone-500/30"
+              }`}
+              title={
+                firebaseStatus === "synced"
+                  ? "Firebase Cloud Database is fully synchronized!"
+                  : firebaseStatus === "connecting"
+                  ? "Syncing configuration with Cloud Firestore..."
+                  : firebaseStatus === "error"
+                  ? "Firebase connection offline. Using local data."
+                  : "Using local database configuration"
+              }
+            >
+              <Database className={`w-3.5 h-3.5 ${firebaseStatus === "connecting" ? "animate-bounce" : ""}`} />
+              <span className="hidden sm:inline">
+                {firebaseStatus === "synced" && "Cloud Synced"}
+                {firebaseStatus === "connecting" && "Syncing..."}
+                {firebaseStatus === "error" && "Local Mode"}
+                {firebaseStatus === "local" && "Local Mode"}
+              </span>
+            </div>
+
+            <button
+              id="nav-home-btn"
+              onClick={handleHomeClick}
+              className="flex items-center gap-1.5 px-3.5 py-1.5 bg-white/10 hover:bg-white/20 backdrop-blur-xs border border-white/20 rounded-xl text-xs font-semibold tracking-wide uppercase transition-all shadow-sm cursor-pointer"
+            >
+              <Home className="w-3.5 h-3.5" />
+              Home
+            </button>
+          </div>
         </div>
 
         {/* Central Hero Body */}
@@ -517,20 +678,20 @@ export default function App() {
       {isAdminOpen && (
         <AdminPanel
           headerImage={headerImage}
-          setHeaderImage={setHeaderImage}
+          setHeaderImage={handleUpdateHeaderImage}
           tools={tools}
-          setTools={setTools}
+          setTools={handleUpdateTools}
           footerLinks={footerLinks}
-          setFooterLinks={setFooterLinks}
+          setFooterLinks={handleUpdateFooterLinks}
           ads={ads}
-          setAds={setAds}
+          setAds={handleUpdateAds}
           onClose={() => setIsAdminOpen(false)}
           showHeroText={showHeroText}
-          setShowHeroText={setShowHeroText}
+          setShowHeroText={handleUpdateShowHeroText}
           heroTitle={heroTitle}
-          setHeroTitle={setHeroTitle}
+          setHeroTitle={handleUpdateHeroTitle}
           heroSubtitle={heroSubtitle}
-          setHeroSubtitle={setHeroSubtitle}
+          setHeroSubtitle={handleUpdateHeroSubtitle}
         />
       )}
     </div>

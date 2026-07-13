@@ -89,6 +89,9 @@ export default function AdminPanel({
   const [topAd, setTopAd] = useState<string>(ads.topBanner);
   const [belowAd, setBelowAd] = useState<string>(ads.belowTools);
   const [sidebarAd, setSidebarAd] = useState<string>(ads.sidebar);
+  const [monetagEnabled, setMonetagEnabled] = useState<boolean>(ads.monetagEnabled !== false);
+  const [monetagDomain, setMonetagDomain] = useState<string>(ads.monetagDomain || "5gvci.com");
+  const [monetagZoneId, setMonetagZoneId] = useState<string>(ads.monetagZoneId || "11277946");
   const [adSuccess, setAdSuccess] = useState<boolean>(false);
 
   // Handles Login
@@ -263,6 +266,9 @@ export default function AdminPanel({
       topBanner: topAd.trim(),
       belowTools: belowAd.trim(),
       sidebar: sidebarAd.trim(),
+      monetagEnabled,
+      monetagDomain: monetagDomain.trim(),
+      monetagZoneId: monetagZoneId.trim(),
     });
     setAdSuccess(true);
     setTimeout(() => setAdSuccess(false), 2000);
@@ -838,6 +844,63 @@ export default function AdminPanel({
                   value={sidebarAd}
                   onChange={(e) => setSidebarAd(e.target.value)}
                 />
+              </div>
+
+              {/* Monetag Settings Box */}
+              <div className="mt-4 pt-4 border-t border-stone-100 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <label htmlFor="toggle-monetag" className="text-xs font-bold text-stone-700 block cursor-pointer">
+                      Enable Monetag Auto-Integration
+                    </label>
+                    <p className="text-[10px] text-stone-400 font-medium">
+                      Injects the dynamic popunder / push notifications smart tag scripts automatically.
+                    </p>
+                  </div>
+                  <input
+                    id="toggle-monetag"
+                    type="checkbox"
+                    checked={monetagEnabled}
+                    onChange={(e) => setMonetagEnabled(e.target.checked)}
+                    className="w-4 h-4 text-matcha-600 border-stone-300 rounded-sm focus:ring-matcha-500 cursor-pointer accent-matcha-600"
+                  />
+                </div>
+
+                {monetagEnabled && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pl-3 border-l-2 border-matcha-400 animate-fade-in">
+                    <div>
+                      <label htmlFor="monetag-domain-input" className="block text-[11px] font-semibold text-stone-500 mb-1">
+                        Monetag Script Domain
+                      </label>
+                      <input
+                        id="monetag-domain-input"
+                        type="text"
+                        className="w-full px-3 py-2 text-xs bg-stone-50 border border-stone-200 focus:outline-none focus:ring-2 focus:ring-matcha-500/20 focus:border-matcha-500 rounded-lg text-stone-800"
+                        value={monetagDomain}
+                        onChange={(e) => setMonetagDomain(e.target.value)}
+                        placeholder="e.g. 5gvci.com"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="monetag-zone-input" className="block text-[11px] font-semibold text-stone-500 mb-1">
+                        Monetag Zone ID (Ad Unit)
+                      </label>
+                      <input
+                        id="monetag-zone-input"
+                        type="text"
+                        className="w-full px-3 py-2 text-xs bg-stone-50 border border-stone-200 focus:outline-none focus:ring-2 focus:ring-matcha-500/20 focus:border-matcha-500 rounded-lg text-stone-800"
+                        value={monetagZoneId}
+                        onChange={(e) => setMonetagZoneId(e.target.value)}
+                        placeholder="e.g. 11277946"
+                      />
+                    </div>
+                  </div>
+                )}
+                
+                {/* Information Badge for Service Worker registration */}
+                <div className="bg-emerald-50 text-[10px] text-emerald-800 p-2.5 rounded-lg border border-emerald-100 leading-normal font-medium">
+                  <strong>Service Workers Installed:</strong> Both <code>/sw.js</code> and <code>/service-worker.js</code> have been successfully initialized at the server root for the domain <code>{monetagDomain}</code> and zone <code>{monetagZoneId}</code> to guarantee push delivery.
+                </div>
               </div>
 
               {adSuccess && (
