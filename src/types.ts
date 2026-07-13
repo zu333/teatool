@@ -6,6 +6,7 @@ export interface Tool {
   category: string;
   iconName: string; // name of lucide icon
   imageScale?: number;
+  targetUrl?: string; // custom link to open when clicked
 }
 
 export interface FooterLink {

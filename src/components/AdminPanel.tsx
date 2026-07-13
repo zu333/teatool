@@ -4,7 +4,7 @@ import {
   X, Lock, Shield, Image as ImageIcon, Plus, Edit2, Trash2, 
   Link as LinkIcon, Check, HelpCircle, Key, RefreshCw, 
   Coffee, AlignLeft, Palette, FileCode, Music, Clock, Cpu, 
-  Wrench, BookOpen, Terminal, Sparkles
+  Wrench, BookOpen, Terminal, Sparkles, ArrowUp, ArrowDown
 } from "lucide-react";
 
 // Map available icon options for simple tools
@@ -83,6 +83,7 @@ export default function AdminPanel({
   const [toolName, setToolName] = useState<string>("");
   const [toolDesc, setToolDesc] = useState<string>("");
   const [toolUrl, setToolUrl] = useState<string>("");
+  const [toolTargetUrl, setToolTargetUrl] = useState<string>("");
   const [toolCat, setToolCat] = useState<string>("");
   const [toolIcon, setToolIcon] = useState<string>("Wrench");
   const [toolError, setToolError] = useState<string>("");
@@ -283,6 +284,7 @@ export default function AdminPanel({
               category: finalCat,
               iconName: finalIcon,
               imageScale: imageScale,
+              targetUrl: toolTargetUrl.trim(),
             }
           : t
       );
@@ -299,6 +301,7 @@ export default function AdminPanel({
         category: finalCat,
         iconName: finalIcon,
         imageScale: imageScale,
+        targetUrl: toolTargetUrl.trim(),
       };
       setTools([...tools, newTool]);
       setToolSuccess(`Tool "${finalName}" created successfully!`);
@@ -308,6 +311,7 @@ export default function AdminPanel({
     setToolName("");
     setToolDesc("");
     setToolUrl("");
+    setToolTargetUrl("");
     setToolCat("");
     setToolIcon("Wrench");
     setImageScale(1);
@@ -318,6 +322,7 @@ export default function AdminPanel({
     setToolName(tool.name);
     setToolDesc(tool.description);
     setToolUrl(tool.embedUrl);
+    setToolTargetUrl(tool.targetUrl || "");
     setToolCat(tool.category);
     setToolIcon(tool.iconName);
     setImageScale(tool.imageScale || 1);
@@ -347,6 +352,26 @@ export default function AdminPanel({
     }
     setToolSuccess(`Deleted tool "${name}".`);
     setDeleteConfirmId(null);
+  };
+
+  const moveToolUp = (index: number) => {
+    if (index === 0) return;
+    const newTools = [...tools];
+    const temp = newTools[index];
+    newTools[index] = newTools[index - 1];
+    newTools[index - 1] = temp;
+    setTools(newTools);
+    setToolSuccess("Tool moved up successfully!");
+  };
+
+  const moveToolDown = (index: number) => {
+    if (index === tools.length - 1) return;
+    const newTools = [...tools];
+    const temp = newTools[index];
+    newTools[index] = newTools[index + 1];
+    newTools[index + 1] = temp;
+    setTools(newTools);
+    setToolSuccess("Tool moved down successfully!");
   };
 
   // Custom Links Management
@@ -631,6 +656,24 @@ export default function AdminPanel({
                 />
               </div>
 
+              {/* Optional Target Link URL */}
+              <div>
+                <label htmlFor="tool-form-target-url" className="block text-[11px] font-semibold text-stone-500 mb-1">
+                  Tool Target Link URL / Address (Optional)
+                </label>
+                <input
+                  id="tool-form-target-url"
+                  type="text"
+                  placeholder="https://example.com/my-tool (Optional link to open when clicked)"
+                  className="w-full px-3 py-2 text-xs bg-white border border-stone-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-matcha-500/20"
+                  value={toolTargetUrl}
+                  onChange={(e) => setToolTargetUrl(e.target.value)}
+                />
+                <p className="text-[10px] text-stone-400 mt-1">
+                  Agar aap chahte hain ke is tool card par click karne se koi external website open ho, to yahan link add karen.
+                </p>
+              </div>
+
               {/* Image Manager Box (Upload + URL + Scaling inside a single box) */}
               <div className="border border-stone-200 bg-white rounded-xl p-4 max-w-sm mx-auto space-y-3.5 shadow-sm">
                 <div className="flex items-center gap-1.5 border-b border-stone-100 pb-1.5">
@@ -729,6 +772,7 @@ export default function AdminPanel({
                       setToolName("");
                       setToolDesc("");
                       setToolUrl("");
+                      setToolTargetUrl("");
                       setToolCat("");
                       setToolIcon("Wrench");
                       setImageScale(1);
@@ -753,16 +797,44 @@ export default function AdminPanel({
               <table className="w-full text-left text-xs text-stone-600">
                 <thead className="bg-stone-50 text-stone-500 font-bold border-b border-stone-100">
                   <tr>
+                    <th className="px-4 py-2.5 w-[80px]">Order</th>
                     <th className="px-4 py-2.5">Name / Category</th>
-                    <th className="px-4 py-2.5">Embed Link</th>
+                    <th className="px-4 py-2.5">Embed Link & Target URL</th>
                     <th className="px-4 py-2.5 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-stone-100 bg-white">
-                  {tools.map((t) => {
+                  {tools.map((t, index) => {
                     const IconC = ICON_MAP[t.iconName] || Wrench;
                     return (
                       <tr key={t.id} id={`row-tool-${t.id}`} className="hover:bg-stone-50/50">
+                        {/* Order Reorder Column */}
+                        <td className="px-4 py-2.5">
+                          <div className="flex items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={() => moveToolUp(index)}
+                              disabled={index === 0}
+                              className={`p-1 rounded hover:bg-stone-100 transition-colors ${
+                                index === 0 ? "text-stone-300 cursor-not-allowed" : "text-stone-600 hover:text-matcha-600"
+                              }`}
+                              title="Move Up"
+                            >
+                              <ArrowUp className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => moveToolDown(index)}
+                              disabled={index === tools.length - 1}
+                              className={`p-1 rounded hover:bg-stone-100 transition-colors ${
+                                index === tools.length - 1 ? "text-stone-300 cursor-not-allowed" : "text-stone-600 hover:text-matcha-600"
+                              }`}
+                              title="Move Down"
+                            >
+                              <ArrowDown className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </td>
                         <td className="px-4 py-2.5">
                           <div className="flex items-center gap-2">
                             <IconC className="w-3.5 h-3.5 text-matcha-600" />
@@ -773,7 +845,14 @@ export default function AdminPanel({
                           </div>
                         </td>
                         <td className="px-4 py-2.5 font-mono text-[10px] text-stone-400 max-w-[180px] truncate">
-                          {t.embedUrl.startsWith("data:") ? "Uploaded Image (base64)" : t.embedUrl}
+                          <div className="space-y-0.5">
+                            <div className="truncate">{t.embedUrl.startsWith("data:") ? "Uploaded Image (base64)" : t.embedUrl}</div>
+                            {t.targetUrl && (
+                              <div className="text-[9px] text-matcha-600 font-bold truncate">
+                                Target Link: {t.targetUrl}
+                              </div>
+                            )}
+                          </div>
                         </td>
                         <td className="px-4 py-2.5 text-right space-x-1.5">
                           <button

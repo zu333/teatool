@@ -324,6 +324,10 @@ export default function App() {
   });
 
   const handleLaunchTool = (tool: Tool) => {
+    if (tool.targetUrl && tool.targetUrl.trim() !== "") {
+      window.open(tool.targetUrl.trim(), "_blank");
+      return;
+    }
     setSelectedTool(tool);
     // Scroll to tool view on mobile or just bring focus
     setTimeout(() => {
@@ -537,7 +541,8 @@ export default function App() {
                     <div
                       key={tool.id}
                       id={`tool-card-${tool.id}`}
-                      className={`group p-5 bg-white rounded-2xl border transition-all duration-300 flex flex-col justify-between relative overflow-hidden ${
+                      onClick={() => handleLaunchTool(tool)}
+                      className={`group p-5 bg-white rounded-2xl border transition-all duration-300 flex flex-col justify-between relative overflow-hidden cursor-pointer ${
                         isActive
                           ? "border-matcha-600 ring-2 ring-matcha-500/20 shadow-md"
                           : "border-stone-200 hover:border-stone-300 hover:shadow-md hover:-translate-y-0.5"
