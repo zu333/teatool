@@ -674,7 +674,7 @@ export default function AdminPanel({
                 </p>
               </div>
 
-              {/* Image Manager Box (Upload + URL + Scaling inside a single box) */}
+              {/* Image Manager Box (URL + Scaling inside a single box) */}
               <div className="border border-stone-200 bg-white rounded-xl p-4 max-w-sm mx-auto space-y-3.5 shadow-sm">
                 <div className="flex items-center gap-1.5 border-b border-stone-100 pb-1.5">
                   <ImageIcon className="w-3.5 h-3.5 text-matcha-600" />
@@ -683,24 +683,10 @@ export default function AdminPanel({
                   </span>
                 </div>
 
-                {/* Upload from Device option */}
-                <div>
-                  <label htmlFor="tool-image-file" className="block text-[10px] font-semibold text-stone-400 mb-1">
-                    Upload from Device
-                  </label>
-                  <input
-                    id="tool-image-file"
-                    type="file"
-                    accept="image/*"
-                    className="w-full text-xs text-stone-500 file:mr-2 file:py-1 file:px-2.5 file:rounded-md file:border-0 file:text-[10px] file:font-semibold file:bg-matcha-100 file:text-matcha-700 hover:file:bg-matcha-200 cursor-pointer"
-                    onChange={handleToolImageUpload}
-                  />
-                </div>
-
-                {/* Or input direct URL option */}
+                {/* Image URL option */}
                 <div>
                   <label htmlFor="tool-image-url" className="block text-[10px] font-semibold text-stone-400 mb-1">
-                    Or Enter Image URL
+                    Enter Tool Image URL
                   </label>
                   <input
                     id="tool-image-url"
@@ -710,6 +696,9 @@ export default function AdminPanel({
                     value={toolUrl}
                     onChange={(e) => setToolUrl(e.target.value)}
                   />
+                  <p className="text-[10px] text-stone-400 mt-1">
+                    Apne tool ke card ke liye image link yahan add karen.
+                  </p>
                 </div>
 
                 {/* Preview and Scaling Controls (Only shown if toolUrl/image is present) */}
