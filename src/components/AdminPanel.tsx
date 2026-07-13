@@ -262,8 +262,13 @@ export default function AdminPanel({
     setToolError("");
     setToolSuccess("");
 
-    if (!toolDesc.trim() || !toolUrl.trim()) {
-      setToolError("Please provide a tool description and select/upload an image (from device or enter URL).");
+    if (!toolDesc.trim()) {
+      setToolError("Please provide a tool description.");
+      return;
+    }
+
+    if (!toolTargetUrl.trim()) {
+      setToolError("Please provide a target link URL/address.");
       return;
     }
 
@@ -280,7 +285,7 @@ export default function AdminPanel({
               ...t,
               name: finalName,
               description: toolDesc.trim(),
-              embedUrl: toolUrl.trim(),
+              embedUrl: toolUrl.trim() || "",
               category: finalCat,
               iconName: finalIcon,
               imageScale: imageScale,
@@ -297,7 +302,7 @@ export default function AdminPanel({
         id: "tool-" + Date.now(),
         name: finalName,
         description: toolDesc.trim(),
-        embedUrl: toolUrl.trim(),
+        embedUrl: toolUrl.trim() || "",
         category: finalCat,
         iconName: finalIcon,
         imageScale: imageScale,
@@ -656,96 +661,22 @@ export default function AdminPanel({
                 />
               </div>
 
-              {/* Optional Target Link URL */}
+              {/* Required Target Link URL */}
               <div>
                 <label htmlFor="tool-form-target-url" className="block text-[11px] font-semibold text-stone-500 mb-1">
-                  Tool Target Link URL / Address (Optional)
+                  Tool Target Link URL / Address
                 </label>
                 <input
                   id="tool-form-target-url"
                   type="text"
-                  placeholder="https://example.com/my-tool (Optional link to open when clicked)"
+                  placeholder="https://example.com/my-tool (Yahan link open karne ke liye add karen)"
                   className="w-full px-3 py-2 text-xs bg-white border border-stone-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-matcha-500/20"
                   value={toolTargetUrl}
                   onChange={(e) => setToolTargetUrl(e.target.value)}
                 />
                 <p className="text-[10px] text-stone-400 mt-1">
-                  Agar aap chahte hain ke is tool card par click karne se koi external website open ho, to yahan link add karen.
+                  Yahan click karne se open hone wala link add karen (Yahan web tool ka address/URL aayega).
                 </p>
-              </div>
-
-              {/* Image Manager Box (URL + Scaling inside a single box) */}
-              <div className="border border-stone-200 bg-white rounded-xl p-4 max-w-sm mx-auto space-y-3.5 shadow-sm">
-                <div className="flex items-center gap-1.5 border-b border-stone-100 pb-1.5">
-                  <ImageIcon className="w-3.5 h-3.5 text-matcha-600" />
-                  <span className="text-[11px] font-bold text-stone-700 uppercase tracking-wider">
-                    Image Configuration Box
-                  </span>
-                </div>
-
-                {/* Image URL option */}
-                <div>
-                  <label htmlFor="tool-image-url" className="block text-[10px] font-semibold text-stone-400 mb-1">
-                    Enter Tool Image URL
-                  </label>
-                  <input
-                    id="tool-image-url"
-                    type="text"
-                    placeholder="https://example.com/image.png"
-                    className="w-full px-2.5 py-1.5 text-xs bg-stone-50 border border-stone-200 rounded-lg focus:outline-none focus:bg-white focus:ring-1 focus:ring-matcha-500/30"
-                    value={toolUrl}
-                    onChange={(e) => setToolUrl(e.target.value)}
-                  />
-                  <p className="text-[10px] text-stone-400 mt-1">
-                    Apne tool ke card ke liye image link yahan add karen.
-                  </p>
-                </div>
-
-                {/* Preview and Scaling Controls (Only shown if toolUrl/image is present) */}
-                {toolUrl ? (
-                  <div className="space-y-2 pt-1 border-t border-stone-100">
-                    <span className="block text-[10px] font-semibold text-stone-500">Image Preview & Zoom</span>
-                    
-                    {/* Compact preview container (box zeyada bara na ho) */}
-                    <div className="w-full h-32 bg-stone-50 rounded-lg border border-stone-200 flex items-center justify-center overflow-hidden relative">
-                      <img
-                        src={toolUrl}
-                        alt="Tool preview"
-                        style={{ transform: `scale(${imageScale})` }}
-                        className="max-h-full max-w-full object-contain transition-transform duration-200 ease-out"
-                      />
-                    </div>
-
-                    {/* Scale slider */}
-                    <div className="space-y-1">
-                      <div className="flex justify-between text-[9px] font-bold text-stone-500">
-                        <span>Zoom / Scale Factor</span>
-                        <span className="font-mono bg-matcha-100 text-matcha-700 px-1.5 py-0.2 rounded">
-                          {Math.round(imageScale * 100)}%
-                        </span>
-                      </div>
-                      <input
-                        id="tool-image-scale-slider"
-                        type="range"
-                        min="0.2"
-                        max="2.5"
-                        step="0.05"
-                        className="w-full accent-matcha-600 h-1 bg-stone-200 rounded-lg appearance-none cursor-pointer"
-                        value={imageScale}
-                        onChange={(e) => setImageScale(parseFloat(e.target.value))}
-                      />
-                      <div className="flex justify-between text-[8px] text-stone-400 font-medium">
-                        <span>0.2x</span>
-                        <span>1.0x (Default)</span>
-                        <span>2.5x</span>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="py-6 border border-dashed border-stone-200 rounded-lg text-center bg-stone-50">
-                    <p className="text-[10px] text-stone-400 font-medium">No image loaded yet.</p>
-                  </div>
-                )}
               </div>
 
               {toolError && <div className="text-xs text-red-600 bg-red-50 p-2 rounded-lg font-medium">{toolError}</div>}
