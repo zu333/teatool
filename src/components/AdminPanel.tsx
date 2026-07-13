@@ -178,32 +178,80 @@ export default function AdminPanel({
     }
   };
 
-  const handleHeaderFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
+  // Helper to compress and resize image in client-side to prevent Firestore document size limit issues (1MB max)
+  const compressAndResizeImage = (file: File, maxWidth = 1200, maxHeight = 1200, quality = 0.75): Promise<string> => {
+    return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = () => {
-        if (typeof reader.result === "string") {
-          setHeaderImage(reader.result);
-          setHeaderUrlInput(reader.result);
-          setHeaderSuccess(true);
-          setTimeout(() => setHeaderSuccess(false), 2000);
+        if (typeof reader.result !== "string") {
+          reject(new Error("Failed to read file"));
+          return;
         }
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height) {
+            if (width > maxWidth) {
+              height = Math.round((height * maxWidth) / width);
+              width = maxWidth;
+            }
+          } else {
+            if (height > maxHeight) {
+              width = Math.round((width * maxHeight) / height);
+              height = maxHeight;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+
+          const ctx = canvas.getContext("2d");
+          if (!ctx) {
+            reject(new Error("Failed to get 2D context"));
+            return;
+          }
+
+          ctx.drawImage(img, 0, 0, width, height);
+          const compressedBase64 = canvas.toDataURL("image/jpeg", quality);
+          resolve(compressedBase64);
+        };
+        img.onerror = () => reject(new Error("Failed to load image"));
+        img.src = reader.result;
       };
+      reader.onerror = () => reject(new Error("Failed to read file"));
       reader.readAsDataURL(file);
+    });
+  };
+
+  const handleHeaderFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      try {
+        // Compress and resize to max 1200px width/height for header
+        const compressedDataUrl = await compressAndResizeImage(file, 1200, 1200, 0.75);
+        setHeaderImage(compressedDataUrl);
+        setHeaderUrlInput(compressedDataUrl);
+        setHeaderSuccess(true);
+        setTimeout(() => setHeaderSuccess(false), 2000);
+      } catch (err) {
+        console.error("Header image compression failed:", err);
+      }
     }
   };
 
-  const handleToolImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleToolImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onload = () => {
-        if (typeof reader.result === "string") {
-          setToolUrl(reader.result);
-        }
-      };
-      reader.readAsDataURL(file);
+      try {
+        // Compress and resize to max 600px width/height for tool icon/card
+        const compressedDataUrl = await compressAndResizeImage(file, 600, 600, 0.75);
+        setToolUrl(compressedDataUrl);
+      } catch (err) {
+        console.error("Tool image compression failed:", err);
+      }
     }
   };
 
