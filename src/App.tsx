@@ -15,7 +15,7 @@ import {
   Wrench, Coffee, HelpCircle, ArrowRight, Sparkles, Database
 } from "lucide-react";
 import { db } from "./lib/firebase";
-import { doc, setDoc, onSnapshot } from "firebase/firestore";
+import { doc, setDoc, onSnapshot, updateDoc } from "firebase/firestore";
 
 export default function App() {
   // --- Persistent State Hooks ---
@@ -78,6 +78,14 @@ export default function App() {
       return "Welcome to Tooltea, a serene sanctuary featuring essential, highly responsive web tools styled with calming, soft light-blue tones.";
     }
   });
+  
+  const [adminPasswordHash, setAdminPasswordHash] = useState<string>(() => {
+    try {
+      return localStorage.getItem("tooltea_admin_password_hash") || "8365a9a126138214f724027eaaa478c4e76fb468405092bcc9b1bc3041c5bcd7";
+    } catch {
+      return "8365a9a126138214f724027eaaa478c4e76fb468405092bcc9b1bc3041c5bcd7"; // default "tea4419" SHA-256 hash
+    }
+  });
 
   // --- UI Control State ---
   const [selectedTool, setSelectedTool] = useState<Tool | null>(null);
@@ -104,6 +112,21 @@ export default function App() {
         if (data.showHeroText !== undefined) setShowHeroText(data.showHeroText);
         if (data.heroTitle !== undefined) setHeroTitle(data.heroTitle);
         if (data.heroSubtitle !== undefined) setHeroSubtitle(data.heroSubtitle);
+        if (data.adminPasswordHash) {
+          if (data.adminPasswordHash === "8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918") {
+            // Auto-upgrade old default "admin" password hash to the new "tea4419" password hash
+            setAdminPasswordHash("8365a9a126138214f724027eaaa478c4e76fb468405092bcc9b1bc3041c5bcd7");
+            updateDoc(docRef, { adminPasswordHash: "8365a9a126138214f724027eaaa478c4e76fb468405092bcc9b1bc3041c5bcd7" })
+              .catch(err => console.error("Failed to auto-upgrade default password hash in Firestore:", err));
+          } else {
+            setAdminPasswordHash(data.adminPasswordHash);
+          }
+        } else {
+          // Initialize if missing
+          setAdminPasswordHash("8365a9a126138214f724027eaaa478c4e76fb468405092bcc9b1bc3041c5bcd7");
+          updateDoc(docRef, { adminPasswordHash: "8365a9a126138214f724027eaaa478c4e76fb468405092bcc9b1bc3041c5bcd7" })
+            .catch(err => console.error("Failed to initialize missing password hash in Firestore:", err));
+        }
         setFirebaseStatus("synced");
       } else {
         // First run: Seed Firestore with local state or defaults
@@ -115,7 +138,8 @@ export default function App() {
           ads: DEFAULT_ADS,
           showHeroText: true,
           heroTitle: "Brewing Simplicity for Your Workflow.",
-          heroSubtitle: "Welcome to Tooltea, a serene sanctuary featuring essential, highly responsive web tools styled with calming, soft light-blue tones."
+          heroSubtitle: "Welcome to Tooltea, a serene sanctuary featuring essential, highly responsive web tools styled with calming, soft light-blue tones.",
+          adminPasswordHash: "8365a9a126138214f724027eaaa478c4e76fb468405092bcc9b1bc3041c5bcd7" // default "tea4419" SHA-256 hash
         }).then(() => {
           setFirebaseStatus("synced");
         }).catch((err) => {
@@ -139,6 +163,7 @@ export default function App() {
     showHeroText: boolean;
     heroTitle: string;
     heroSubtitle: string;
+    adminPasswordHash: string;
   }>) => {
     try {
       setFirebaseStatus("connecting");
@@ -185,6 +210,11 @@ export default function App() {
   const handleUpdateHeroSubtitle = (val: string) => {
     setHeroSubtitle(val);
     saveToFirebase({ heroSubtitle: val });
+  };
+
+  const handleUpdateAdminPassword = (newHash: string) => {
+    setAdminPasswordHash(newHash);
+    saveToFirebase({ adminPasswordHash: newHash });
   };
 
   // --- Write to LocalStorage on state changes ---
@@ -267,6 +297,14 @@ export default function App() {
       console.warn("Could not save hero_subtitle to localStorage:", e);
     }
   }, [heroSubtitle]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("tooltea_admin_password_hash", adminPasswordHash);
+    } catch (e) {
+      console.warn("Could not save admin_password_hash to localStorage:", e);
+    }
+  }, [adminPasswordHash]);
 
   // --- Category collection logic ---
   const categories: string[] = ["All", ...Array.from(new Set<string>(tools.filter(t => t && t.category).map((t) => t.category)))];
@@ -692,6 +730,8 @@ export default function App() {
           setHeroTitle={handleUpdateHeroTitle}
           heroSubtitle={heroSubtitle}
           setHeroSubtitle={handleUpdateHeroSubtitle}
+          adminPasswordHash={adminPasswordHash}
+          setAdminPasswordHash={handleUpdateAdminPassword}
         />
       )}
     </div>

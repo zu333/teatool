@@ -39,6 +39,8 @@ interface AdminPanelProps {
   setHeroTitle: (val: string) => void;
   heroSubtitle: string;
   setHeroSubtitle: (val: string) => void;
+  adminPasswordHash: string;
+  setAdminPasswordHash: (val: string) => void;
 }
 
 export default function AdminPanel({
@@ -57,11 +59,19 @@ export default function AdminPanel({
   setHeroTitle,
   heroSubtitle,
   setHeroSubtitle,
+  adminPasswordHash,
+  setAdminPasswordHash,
 }: AdminPanelProps) {
   // Authorization State
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [password, setPassword] = useState<string>("");
   const [authError, setAuthError] = useState<string>("");
+
+  // Change Password State
+  const [newPassword, setNewPassword] = useState<string>("");
+  const [confirmPassword, setConfirmPassword] = useState<string>("");
+  const [passwordSuccess, setPasswordSuccess] = useState<string>("");
+  const [passwordError, setPasswordError] = useState<string>("");
 
   // Header State
   const [headerUrlInput, setHeaderUrlInput] = useState<string>(headerImage);
@@ -94,14 +104,68 @@ export default function AdminPanel({
   const [monetagZoneId, setMonetagZoneId] = useState<string>(ads.monetagZoneId || "11277946");
   const [adSuccess, setAdSuccess] = useState<boolean>(false);
 
-  // Handles Login
-  const handleLogin = (e: React.FormEvent) => {
+  // Cryptographic hashing helper using browser built-in Web Crypto API (SHA-256)
+  const sha256 = async (message: string): Promise<string> => {
+    const msgBuffer = new TextEncoder().encode(message);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  };
+
+  // Handles Login with SHA-256 comparison
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password === "admin") {
-      setIsAuthenticated(true);
-      setAuthError("");
-    } else {
-      setAuthError("Incorrect password. Hint: Use 'admin' to test.");
+    if (!password) {
+      setAuthError("Password cannot be empty.");
+      return;
+    }
+    try {
+      const enteredHash = await sha256(password);
+      const expectedHash = adminPasswordHash || "8365a9a126138214f724027eaaa478c4e76fb468405092bcc9b1bc3041c5bcd7"; // default hash of "tea4419"
+      
+      if (enteredHash === expectedHash) {
+        setIsAuthenticated(true);
+        setAuthError("");
+      } else {
+        setAuthError("Incorrect password.");
+      }
+    } catch (err) {
+      console.error("Hashing failed:", err);
+      // Fallback simple comparison if Crypto API is not supported (unlikely)
+      if (password === "tea4419") {
+        setIsAuthenticated(true);
+        setAuthError("");
+      } else {
+        setAuthError("Incorrect password.");
+      }
+    }
+  };
+
+  // Handles Changing Admin Password
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordError("");
+    setPasswordSuccess("");
+
+    if (!newPassword) {
+      setPasswordError("New password cannot be empty.");
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setPasswordError("Passwords do not match.");
+      return;
+    }
+
+    try {
+      const newHash = await sha256(newPassword);
+      setAdminPasswordHash(newHash);
+      setPasswordSuccess("Admin password changed successfully and saved to Cloud Firestore!");
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch (err) {
+      console.error("Failed to hash new password:", err);
+      setPasswordError("Failed to hash new password. Please try again.");
     }
   };
 
@@ -315,10 +379,7 @@ export default function AdminPanel({
                 />
                 <Key className="w-4 h-4 text-stone-400 absolute left-3.5 top-3.5" />
               </div>
-              <p className="text-[11px] text-stone-500 mt-2 flex items-center gap-1.5 bg-stone-50 p-2.5 rounded-lg border border-stone-200/50">
-                <Lock className="w-3.5 h-3.5 text-stone-600 shrink-0" />
-                <span>Tip: The master password is <strong>admin</strong></span>
-              </p>
+              {/* Password Hint removed for high security */}
             </div>
 
             {authError && (
@@ -915,6 +976,65 @@ export default function AdminPanel({
                 className="w-full py-2.5 bg-matcha-600 hover:bg-matcha-700 text-white text-xs font-bold rounded-xl transition-colors shadow-xs"
               >
                 Save Monetization Settings
+              </button>
+            </form>
+          </div>
+
+          {/* SECTION 5: SECURITY SETTINGS */}
+          <div className="bg-white p-5 rounded-2xl border border-stone-200 shadow-xs">
+            <h3 className="text-sm font-bold text-stone-800 uppercase tracking-wider mb-4 flex items-center gap-2 border-b border-stone-100 pb-2">
+              <Key className="w-4 h-4 text-matcha-600" />
+              Security Settings
+            </h3>
+
+            <form onSubmit={handleChangePassword} className="space-y-4">
+              <div>
+                <label htmlFor="new-password-input" className="block text-xs font-semibold text-stone-500 mb-1">
+                  New Admin Password
+                </label>
+                <input
+                  id="new-password-input"
+                  type="password"
+                  placeholder="Enter new admin password"
+                  className="w-full px-3 py-2 text-xs bg-stone-50 border border-stone-200 focus:outline-none focus:ring-2 focus:ring-matcha-500/20 focus:border-matcha-500 rounded-lg text-stone-800 font-semibold"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                />
+              </div>
+
+              <div>
+                <label htmlFor="confirm-password-input" className="block text-xs font-semibold text-stone-500 mb-1">
+                  Confirm Password
+                </label>
+                <input
+                  id="confirm-password-input"
+                  type="password"
+                  placeholder="Confirm new admin password"
+                  className="w-full px-3 py-2 text-xs bg-stone-50 border border-stone-200 focus:outline-none focus:ring-2 focus:ring-matcha-500/20 focus:border-matcha-500 rounded-lg text-stone-800 font-semibold"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                />
+              </div>
+
+              {passwordError && (
+                <div className="text-xs text-red-600 bg-red-50 p-2.5 rounded-lg border border-red-100">
+                  {passwordError}
+                </div>
+              )}
+
+              {passwordSuccess && (
+                <div className="text-xs text-green-700 bg-green-50 p-2.5 rounded-lg border border-green-100 flex items-center gap-1.5 font-medium leading-relaxed">
+                  <Check className="w-4 h-4 shrink-0 text-green-600" />
+                  <span>{passwordSuccess}</span>
+                </div>
+              )}
+
+              <button
+                id="change-password-btn"
+                type="submit"
+                className="w-full py-2.5 bg-matcha-600 hover:bg-matcha-700 text-white text-xs font-bold rounded-xl transition-colors shadow-xs"
+              >
+                Change Admin Password
               </button>
             </form>
           </div>
