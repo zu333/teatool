@@ -23,6 +23,73 @@ export const ICON_MAP: Record<string, any> = {
   Terminal: Terminal,
 };
 
+interface ExtractedMeta {
+  name: string;
+  category: string;
+  iconName: string;
+}
+
+export function estimateToolMeta(desc: string, url: string): ExtractedMeta {
+  const text = (desc + " " + url).toLowerCase();
+  
+  let iconName = "Sparkles";
+  let category = "Utility";
+  
+  if (text.includes("json") || text.includes("yaml") || text.includes("xml") || text.includes("api") || text.includes("code") || text.includes("regex") || text.includes("developer") || text.includes("html") || text.includes("css") || text.includes("js") || text.includes("typescript")) {
+    iconName = "FileCode";
+    category = "Developer";
+  } else if (text.includes("convert") || text.includes("base64") || text.includes("b64") || text.includes("format") || text.includes("minify") || text.includes("parse") || text.includes("encoder") || text.includes("decoder") || text.includes("binary") || text.includes("hex")) {
+    iconName = "RefreshCw";
+    category = "Converters";
+  } else if (text.includes("color") || text.includes("palette") || text.includes("design") || text.includes("theme") || text.includes("css") || text.includes("gradient") || text.includes("picker") || text.includes("image") || text.includes("photo") || text.includes("draw")) {
+    iconName = "Palette";
+    category = "Design";
+  } else if (text.includes("write") || text.includes("text") || text.includes("word") || text.includes("count") || text.includes("character") || text.includes("grammar") || text.includes("draft") || text.includes("notes") || text.includes("markdown")) {
+    iconName = "AlignLeft";
+    category = "Writing";
+  } else if (text.includes("music") || text.includes("radio") || text.includes("lofi") || text.includes("ambient") || text.includes("sound") || text.includes("audio") || text.includes("play") || text.includes("focus") || text.includes("calm")) {
+    iconName = "Music";
+    category = "Focus";
+  } else if (text.includes("tea") || text.includes("matcha") || text.includes("steep") || text.includes("brew") || text.includes("coffee") || text.includes("drink")) {
+    iconName = "Coffee";
+    category = "Tea Ritual";
+  } else if (text.includes("time") || text.includes("clock") || text.includes("timer") || text.includes("stopwatch") || text.includes("countdown") || text.includes("seconds") || text.includes("minutes")) {
+    iconName = "Clock";
+    category = "Utility";
+  } else if (text.includes("cpu") || text.includes("hardware") || text.includes("sys") || text.includes("perf") || text.includes("terminal") || text.includes("cmd") || text.includes("shell")) {
+    iconName = "Cpu";
+    category = "System";
+  } else if (text.includes("book") || text.includes("learn") || text.includes("read") || text.includes("doc") || text.includes("wiki") || text.includes("guide")) {
+    iconName = "BookOpen";
+    category = "Learning";
+  }
+
+  let cleanDesc = desc.trim()
+    .replace(/^(a\s+)?(simple\s+)?tool\s+(to|for)\s+/i, "")
+    .replace(/^(this\s+)?is\s+(a\s+)?/i, "")
+    .replace(/^(useful\s+)?to\s+/i, "");
+    
+  if (cleanDesc.length > 0) {
+    cleanDesc = cleanDesc.charAt(0).toUpperCase() + cleanDesc.slice(1);
+  }
+  
+  const parts = cleanDesc.split(/[.,;]/);
+  let candidate = parts[0].trim();
+  
+  if (candidate.length > 35) {
+    const words = candidate.split(/\s+/);
+    if (words.length > 4) {
+      candidate = words.slice(0, 4).join(" ");
+    } else {
+      candidate = candidate.slice(0, 32) + "...";
+    }
+  }
+  
+  const name = candidate || "Web Tool";
+  
+  return { name, category, iconName };
+}
+
 interface AdminPanelProps {
   headerImage: string;
   setHeaderImage: (img: string) => void;
@@ -90,6 +157,7 @@ export default function AdminPanel({
   const [toolSuccess, setToolSuccess] = useState<string>("");
   const [imageScale, setImageScale] = useState<number>(1);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [isGenerating, setIsGenerating] = useState<boolean>(false);
 
   // Links state
   const [newLinkText, setNewLinkText] = useState<string>("");
@@ -256,8 +324,8 @@ export default function AdminPanel({
     }
   };
 
-  // Create or Update Tool
-  const handleSaveTool = (e: React.FormEvent) => {
+  // Create or Update Tool (With Smart Gemini AI & Rule-Based Auto-Classification)
+  const handleSaveTool = async (e: React.FormEvent) => {
     e.preventDefault();
     setToolError("");
     setToolSuccess("");
@@ -272,10 +340,38 @@ export default function AdminPanel({
       return;
     }
 
-    // Automatically derive a readable name, category and icon for a consistent, clean system setup
-    const finalName = editingTool?.name || (toolDesc.trim().slice(0, 35) + (toolDesc.trim().length > 35 ? "..." : ""));
-    const finalCat = editingTool?.category || "Visuals";
-    const finalIcon = editingTool?.iconName || "Sparkles";
+    setIsGenerating(true);
+
+    // 1. Run local keyword-based smart estimator as a highly reliable fallback
+    const localEst = estimateToolMeta(toolDesc.trim(), toolTargetUrl.trim());
+    let finalName = localEst.name;
+    let finalCat = localEst.category;
+    let finalIcon = localEst.iconName;
+
+    try {
+      // 2. Try to query the Gemini-powered server-side suggestion route
+      const response = await fetch("/api/suggest-tool", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          description: toolDesc.trim(),
+          targetUrl: toolTargetUrl.trim()
+        })
+      });
+
+      if (response.ok) {
+        const aiResult = await response.json();
+        if (aiResult && aiResult.name) {
+          finalName = aiResult.name;
+          finalCat = aiResult.category;
+          finalIcon = aiResult.iconName;
+        }
+      }
+    } catch (err) {
+      console.warn("Gemini suggestion route failed, using local smart classification:", err);
+    } finally {
+      setIsGenerating(false);
+    }
 
     if (editingTool) {
       // Modify
@@ -294,7 +390,7 @@ export default function AdminPanel({
           : t
       );
       setTools(updated);
-      setToolSuccess(`Tool "${finalName}" updated successfully!`);
+      setToolSuccess(`Tool "${finalName}" updated successfully (Categorized under ${finalCat})!`);
       setEditingTool(null);
     } else {
       // Add New
@@ -309,7 +405,7 @@ export default function AdminPanel({
         targetUrl: toolTargetUrl.trim(),
       };
       setTools([...tools, newTool]);
-      setToolSuccess(`Tool "${finalName}" created successfully!`);
+      setToolSuccess(`Tool "${finalName}" added successfully (Categorized under ${finalCat})!`);
     }
 
     // Reset Form
@@ -705,9 +801,23 @@ export default function AdminPanel({
                 <button
                   id="save-tool-btn"
                   type="submit"
-                  className="px-5 py-2 bg-matcha-600 hover:bg-matcha-700 text-white text-xs font-bold rounded-xl shadow-xs cursor-pointer"
+                  disabled={isGenerating}
+                  className={`px-5 py-2 text-white text-xs font-bold rounded-xl shadow-xs inline-flex items-center gap-1.5 transition-all ${
+                    isGenerating
+                      ? "bg-matcha-400 cursor-not-allowed opacity-80"
+                      : "bg-matcha-600 hover:bg-matcha-700 cursor-pointer"
+                  }`}
                 >
-                  {editingTool ? "Save Changes" : "Create Tool"}
+                  {isGenerating ? (
+                    <>
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                      Analyzing with AI...
+                    </>
+                  ) : editingTool ? (
+                    "Save Changes"
+                  ) : (
+                    "Create Tool"
+                  )}
                 </button>
               </div>
             </form>

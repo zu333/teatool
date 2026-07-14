@@ -2,6 +2,76 @@ const fs = require('fs');
 const path = require('path');
 
 module.exports = async (req, res) => {
+  // Intercept and handle /api/suggest-tool endpoint for AI-based tool details generation
+  if (req.url && req.url.includes("/api/suggest-tool")) {
+    if (req.method !== "POST") {
+      res.setHeader("Allow", "POST");
+      return res.status(405).json({ error: "Method Not Allowed" });
+    }
+
+    try {
+      // Read POST body
+      let body = "";
+      await new Promise((resolve) => {
+        req.on("data", (chunk) => { body += chunk; });
+        req.on("end", resolve);
+      });
+
+      const { description, targetUrl } = JSON.parse(body || "{}");
+      if (!description) {
+        return res.status(400).json({ error: "Description is required" });
+      }
+
+      // Initialize Gemini API dynamically
+      const { GoogleGenAI, Type } = await import("@google/genai");
+      const apiKey = process.env.GEMINI_API_KEY;
+      if (!apiKey) {
+        throw new Error("GEMINI_API_KEY environment variable is missing");
+      }
+
+      const ai = new GoogleGenAI({
+        apiKey: apiKey,
+        httpOptions: {
+          headers: {
+            'User-Agent': 'aistudio-build',
+          }
+        }
+      });
+
+      const prompt = `You are a tool categorization assistant. Based on the following tool description and URL, suggest a short catchy tool name (max 30 chars), a category, and an icon from the allowed icon list.
+
+Tool Description: "${description}"
+Tool URL: "${targetUrl || ""}"
+
+Allowed Categories: "Tea Ritual", "Writing", "Design", "Developer", "Focus", "Converters", "Utility", "System", "Learning", "Widgets"
+Allowed Icons (choose exactly one key): "Coffee", "AlignLeft", "Palette", "RefreshCw", "FileCode", "Music", "Clock", "Sparkles", "Cpu", "Wrench", "BookOpen", "Terminal"`;
+
+      const response = await ai.models.generateContent({
+        model: "gemini-3.5-flash",
+        contents: prompt,
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              name: { type: Type.STRING, description: "Catchy short title of the tool, max 30 characters" },
+              category: { type: Type.STRING, description: "Category that fits best from the allowed list" },
+              iconName: { type: Type.STRING, description: "Icon key chosen from the allowed list" }
+            },
+            required: ["name", "category", "iconName"]
+          }
+        }
+      });
+
+      res.setHeader("Content-Type", "application/json");
+      return res.status(200).send(response.text);
+    } catch (err) {
+      console.error("Vercel Gemini API call failed:", err);
+      res.setHeader("Content-Type", "application/json");
+      return res.status(500).send(JSON.stringify({ error: err.message || "Failed to process using AI" }));
+    }
+  }
+
   // 1. Set fallback/default values (matches index.html defaults)
   let headerImage = "https://images.unsplash.com/photo-1576092768241-dec231879fc3?auto=format&fit=crop&q=80&w=1200&h=630&facepad=2&fit=crop";
   let heroTitle = "Tooltea - Essential, Serene Web Tools";
