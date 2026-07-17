@@ -12,7 +12,8 @@ import ToolRenderer from "./components/ToolRenderer";
 import AdContainer from "./components/AdContainer";
 import { 
   Search, Shield, X, ChevronRight, Home, ExternalLink, 
-  Wrench, Coffee, HelpCircle, ArrowRight, Sparkles, Database
+  Wrench, Coffee, HelpCircle, ArrowRight, Sparkles, Database,
+  MousePointerClick, Calendar, Sun, Moon
 } from "lucide-react";
 import { db } from "./lib/firebase";
 import { doc, setDoc, onSnapshot, updateDoc } from "firebase/firestore";
@@ -93,8 +94,47 @@ export default function App() {
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
 
+  // --- Dark Mode State ---
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem("tooltea_dark_mode");
+      // Default to true (Dark Mode by default)
+      return saved === null ? true : saved === "true";
+    } catch {
+      return true;
+    }
+  });
+
+  // Dark Mode effect
+  useEffect(() => {
+    try {
+      localStorage.setItem("tooltea_dark_mode", String(isDarkMode));
+    } catch (e) {
+      console.warn("Could not write dark mode state to localStorage:", e);
+    }
+
+    if (isDarkMode) {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+  }, [isDarkMode]);
+
   // --- Firebase Cloud Sync State ---
   const [firebaseStatus, setFirebaseStatus] = useState<"connecting" | "synced" | "error" | "local">("connecting");
+
+  // --- Daily Click Tracking State ---
+  const [globalClicks, setGlobalClicks] = useState<number>(0);
+  const [personalClicks, setPersonalClicks] = useState<number>(0);
+  const [clickDate, setClickDate] = useState<string>("");
+
+  const getTodayDateString = () => {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
 
   // Real-time Firestore sync
   useEffect(() => {
@@ -154,6 +194,107 @@ export default function App() {
 
     return () => unsubscribe();
   }, []);
+
+  // --- Real-time Daily Clicks Synchronization and Reset ---
+  useEffect(() => {
+    const todayStr = getTodayDateString();
+    
+    // Check local personal clicks
+    try {
+      const savedDate = localStorage.getItem("tooltea_click_date");
+      if (savedDate === todayStr) {
+        const savedCount = localStorage.getItem("tooltea_personal_clicks");
+        setPersonalClicks(savedCount ? parseInt(savedCount, 10) : 0);
+      } else {
+        localStorage.setItem("tooltea_click_date", todayStr);
+        localStorage.setItem("tooltea_personal_clicks", "0");
+        setPersonalClicks(0);
+      }
+    } catch (e) {
+      console.warn("Could not read local clicks from localStorage:", e);
+    }
+
+    // Subscribe to global clicks in Firestore
+    const clicksDocRef = doc(db, "app_data", "clicks");
+    const unsubscribeClicks = onSnapshot(clicksDocRef, (snap) => {
+      if (snap.exists()) {
+        const data = snap.data();
+        if (data.date === todayStr) {
+          setGlobalClicks(data.count || 0);
+          setClickDate(data.date || todayStr);
+        } else {
+          // Date mismatch: Reset Firestore document for the new day
+          setDoc(clicksDocRef, { date: todayStr, count: 0 })
+            .then(() => {
+              setGlobalClicks(0);
+              setClickDate(todayStr);
+            })
+            .catch(e => console.error("Failed to reset Firestore clicks for new day:", e));
+        }
+      } else {
+        // Document doesn't exist, seed it
+        setDoc(clicksDocRef, { date: todayStr, count: 0 })
+          .then(() => {
+            setGlobalClicks(0);
+            setClickDate(todayStr);
+          })
+          .catch(e => console.error("Failed to initialize clicks document:", e));
+      }
+    }, (error) => {
+      console.error("Firestore clicks subscription error:", error);
+    });
+
+    return () => unsubscribeClicks();
+  }, []);
+
+  const handleSiteClick = async () => {
+    const todayStr = getTodayDateString();
+    
+    // 1. Update Personal clicks state & localStorage
+    const nextPersonal = personalClicks + 1;
+    setPersonalClicks(nextPersonal);
+    try {
+      localStorage.setItem("tooltea_click_date", todayStr);
+      localStorage.setItem("tooltea_personal_clicks", String(nextPersonal));
+    } catch (e) {
+      console.warn("Could not save personal clicks to localStorage:", e);
+    }
+
+    // 2. Update Global clicks in Firestore
+    const clicksDocRef = doc(db, "app_data", "clicks");
+    try {
+      if (clickDate === todayStr) {
+        await setDoc(clicksDocRef, {
+          date: todayStr,
+          count: globalClicks + 1
+        }, { merge: true });
+      } else {
+        await setDoc(clicksDocRef, {
+          date: todayStr,
+          count: 1
+        });
+      }
+    } catch (err) {
+      console.error("Failed to update global click count in Firestore:", err);
+    }
+  };
+
+  // Listen to interactive element clicks on the window
+  useEffect(() => {
+    const listener = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target) return;
+      
+      // Filter clicks to interactive elements (buttons, links, inputs, clickables, tool-cards)
+      const isInteractive = target.closest("button, a, input, select, textarea, [onClick], .cursor-pointer, [id^='tool-card-'], [id^='launch-btn-']");
+      if (isInteractive) {
+        handleSiteClick();
+      }
+    };
+
+    window.addEventListener("click", listener);
+    return () => window.removeEventListener("click", listener);
+  }, [globalClicks, clickDate, personalClicks]);
 
   const saveToFirebase = async (updates: Partial<{
     tools: Tool[];
@@ -343,7 +484,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#eef5fa] text-stone-900 font-sans flex flex-col relative selection:bg-matcha-300/40 selection:text-matcha-800">
+    <div className="min-h-screen bg-gradient-to-br from-[#f0f9ff] via-[#e0f2fe] to-[#dbeafe] dark:from-[#020617] dark:via-[#0b1528] dark:to-[#172554] text-slate-900 dark:text-slate-100 font-sans flex flex-col relative transition-all duration-350 selection:bg-blue-200 selection:text-blue-900">
       
       {/* 1. Header Hero Section */}
       <header
@@ -412,6 +553,26 @@ export default function App() {
               </span>
             </div>
 
+            {/* Dark Mode Toggle Button */}
+            <button
+              id="nav-theme-toggle-btn"
+              onClick={() => setIsDarkMode(!isDarkMode)}
+              className="flex items-center gap-1.5 px-3.5 py-1.5 bg-white/10 hover:bg-white/20 backdrop-blur-xs border border-white/20 rounded-xl text-xs font-semibold tracking-wide uppercase transition-all shadow-sm cursor-pointer"
+              title={isDarkMode ? "Toggle Light Mode" : "Toggle Dark Mode"}
+            >
+              {isDarkMode ? (
+                <>
+                  <Sun className="w-3.5 h-3.5 text-amber-300 animate-spin-slow" />
+                  <span className="hidden xs:inline">Light</span>
+                </>
+              ) : (
+                <>
+                  <Moon className="w-3.5 h-3.5 text-stone-200" />
+                  <span className="hidden xs:inline">Dark</span>
+                </>
+              )}
+            </button>
+
             <button
               id="nav-home-btn"
               onClick={handleHomeClick}
@@ -447,27 +608,27 @@ export default function App() {
           
           {/* Active Launched Tool Workspace (Displays on top if loaded) */}
           {selectedTool && (
-            <div id="active-tool-workspace" className="p-1 bg-matcha-200 rounded-3xl border border-stone-200/60 shadow-md animate-fade-in">
-              <div className="px-6 py-4 flex justify-between items-center bg-white rounded-t-2xl border-b border-stone-100">
+            <div id="active-tool-workspace" className="p-1 bg-matcha-200 dark:bg-matcha-950/60 rounded-3xl border border-stone-200/60 dark:border-stone-800 shadow-md animate-fade-in">
+              <div className="px-6 py-4 flex justify-between items-center bg-white dark:bg-stone-900 rounded-t-2xl border-b border-stone-100 dark:border-stone-850/80">
                 <div className="flex items-center gap-3">
-                  <div className="p-2.5 bg-matcha-100 text-matcha-600 rounded-xl">
+                  <div className="p-2.5 bg-matcha-100 dark:bg-matcha-950/40 text-matcha-600 dark:text-[#6baef2] rounded-xl">
                     {React.createElement(ICON_MAP[selectedTool.iconName] || Wrench, { className: "w-5 h-5" })}
                   </div>
                   <div>
-                    <h3 className="text-lg font-bold text-stone-950">{selectedTool.name}</h3>
-                    <p className="text-xs text-stone-500 font-medium">{selectedTool.category} • Active</p>
+                    <h3 className="text-lg font-bold text-stone-950 dark:text-stone-100">{selectedTool.name}</h3>
+                    <p className="text-xs text-stone-500 dark:text-stone-400 font-medium">{selectedTool.category} • Active</p>
                   </div>
                 </div>
                 <button
                   id="close-launched-tool"
                   onClick={() => setSelectedTool(null)}
-                  className="p-1.5 bg-stone-100 hover:bg-stone-200 rounded-lg text-stone-500 hover:text-stone-800 transition-all flex items-center gap-1 text-xs font-semibold"
+                  className="p-1.5 bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 rounded-lg text-stone-500 dark:text-stone-300 hover:text-stone-800 dark:hover:text-stone-100 transition-all flex items-center gap-1 text-xs font-semibold"
                 >
                   <X className="w-4 h-4" />
                   Close Tool
                 </button>
               </div>
-              <div className="bg-white/80 p-4 md:p-6 rounded-b-2xl">
+              <div className="bg-white/80 dark:bg-stone-900/80 p-4 md:p-6 rounded-b-2xl">
                 <ToolRenderer tool={selectedTool} />
               </div>
             </div>
@@ -475,14 +636,14 @@ export default function App() {
 
           {/* Grid Header & Filters */}
           <div className="space-y-4">
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-stone-200/60 shadow-xs">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white dark:bg-stone-900 p-5 rounded-2xl border border-stone-200/60 dark:border-stone-800/80 shadow-xs">
               <div className="flex items-center gap-3">
-                <div className="p-2.5 bg-matcha-100 text-matcha-600 rounded-xl">
+                <div className="p-2.5 bg-matcha-100 dark:bg-matcha-950/40 text-matcha-600 dark:text-[#6baef2] rounded-xl">
                   <Coffee className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-stone-900">Brewed Tool Collection</h3>
-                  <p className="text-xs text-stone-500 font-medium">Click any card to launch the tool instantly</p>
+                  <h3 className="text-lg font-bold text-stone-900 dark:text-stone-100">Brewed Tool Collection</h3>
+                  <p className="text-xs text-stone-500 dark:text-stone-400 font-medium">Click any card to launch the tool instantly</p>
                 </div>
               </div>
 
@@ -494,7 +655,7 @@ export default function App() {
                     id="workspace-search-input"
                     type="text"
                     placeholder="Search tools..."
-                    className="pl-9 pr-8 py-2 bg-stone-50 focus:bg-white rounded-xl text-stone-800 placeholder-stone-400 font-semibold text-xs focus:outline-none border border-stone-200 focus:border-matcha-500 focus:ring-2 focus:ring-matcha-500/10 transition-all w-full sm:w-48"
+                    className="pl-9 pr-8 py-2 bg-stone-50 dark:bg-stone-950 focus:bg-white dark:focus:bg-stone-900 rounded-xl text-stone-800 dark:text-stone-200 placeholder-stone-400 font-semibold text-xs focus:outline-none border border-stone-200 dark:border-stone-800 focus:border-matcha-500 focus:ring-2 focus:ring-matcha-500/10 transition-all w-full sm:w-48"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                   />
@@ -511,7 +672,7 @@ export default function App() {
                 </div>
 
                 {/* Category selector */}
-                <div className="flex flex-wrap gap-1 bg-stone-100 p-1 rounded-xl border border-stone-200/40 text-[11px] self-start sm:self-auto">
+                <div className="flex flex-wrap gap-1 bg-stone-100 dark:bg-stone-950 p-1 rounded-xl border border-stone-200/40 dark:border-stone-800/60 text-[11px] self-start sm:self-auto">
                   {categories.map((cat) => (
                     <button
                       key={cat}
@@ -519,8 +680,8 @@ export default function App() {
                       onClick={() => setSelectedCategory(cat)}
                       className={`px-3 py-1.5 rounded-lg font-semibold transition-all cursor-pointer ${
                         selectedCategory === cat
-                          ? "bg-white text-matcha-600 shadow-xs border border-stone-200/30 font-bold"
-                          : "text-stone-500 hover:text-stone-800"
+                          ? "bg-white dark:bg-stone-850 text-matcha-600 dark:text-[#6baef2] shadow-xs border border-stone-200/30 dark:border-stone-750 font-bold"
+                          : "text-stone-500 dark:text-stone-400 hover:text-stone-800 dark:hover:text-stone-200"
                       }`}
                     >
                       {cat}
@@ -542,32 +703,32 @@ export default function App() {
                       key={tool.id}
                       id={`tool-card-${tool.id}`}
                       onClick={() => handleLaunchTool(tool)}
-                      className={`group p-5 bg-white rounded-2xl border transition-all duration-300 flex flex-col justify-between relative overflow-hidden cursor-pointer ${
+                      className={`group p-5 bg-white dark:bg-stone-900 rounded-2xl border transition-all duration-300 flex flex-col justify-between relative overflow-hidden cursor-pointer ${
                         isActive
-                          ? "border-matcha-600 ring-2 ring-matcha-500/20 shadow-md"
-                          : "border-stone-200 hover:border-stone-300 hover:shadow-md hover:-translate-y-0.5"
+                          ? "border-matcha-600 dark:border-matcha-500 ring-2 ring-matcha-500/20 dark:ring-matcha-500/30 shadow-md"
+                          : "border-stone-200 dark:border-stone-800/80 hover:border-stone-300 dark:hover:border-stone-700 hover:shadow-md hover:-translate-y-0.5"
                       }`}
                     >
                       {/* Card background tea leaf accent */}
-                      <div className="absolute -right-6 -top-6 w-16 h-16 rounded-full bg-stone-50 group-hover:bg-matcha-50/50 transition-colors" />
+                      <div className="absolute -right-6 -top-6 w-16 h-16 rounded-full bg-stone-50 dark:bg-stone-850 group-hover:bg-matcha-50/50 dark:group-hover:bg-matcha-950/20 transition-colors" />
 
                       <div className="space-y-3 z-10">
                         {/* Tag & Icon Row */}
                         <div className="flex justify-between items-center">
-                          <span className="text-[10px] uppercase font-mono font-bold tracking-wider text-matcha-600 bg-matcha-100 px-2.5 py-1 rounded-md">
+                          <span className="text-[10px] uppercase font-mono font-bold tracking-wider text-matcha-600 dark:text-[#6baef2] bg-matcha-100 dark:bg-matcha-950/30 px-2.5 py-1 rounded-md">
                             {tool.category}
                           </span>
-                          <div className={`p-2 rounded-xl transition-colors ${isActive ? "bg-matcha-600 text-white" : "bg-stone-50 text-stone-500 group-hover:bg-matcha-100 group-hover:text-matcha-600"}`}>
+                          <div className={`p-2 rounded-xl transition-colors ${isActive ? "bg-matcha-600 text-white" : "bg-stone-50 dark:bg-stone-850 text-stone-500 dark:text-stone-400 group-hover:bg-matcha-100 dark:group-hover:bg-matcha-950/20 group-hover:text-matcha-600 dark:group-hover:text-[#6baef2]"}`}>
                             <ToolIcon className="w-4 h-4" />
                           </div>
                         </div>
 
                         {/* Title & Description */}
                         <div>
-                          <h4 className="font-bold text-stone-950 text-sm tracking-tight group-hover:text-matcha-600 transition-colors">
+                          <h4 className="font-bold text-stone-950 dark:text-stone-100 text-sm tracking-tight group-hover:text-matcha-600 dark:group-hover:text-[#6baef2] transition-colors">
                             {tool.name}
                           </h4>
-                          <p className="text-xs text-stone-500 mt-1.5 leading-relaxed font-medium line-clamp-3">
+                          <p className="text-xs text-stone-500 dark:text-stone-400 mt-1.5 leading-relaxed font-medium line-clamp-3">
                             {tool.description}
                           </p>
                         </div>
@@ -581,7 +742,7 @@ export default function App() {
                           className={`w-full py-2 px-4 rounded-xl text-xs font-bold transition-all duration-200 flex items-center justify-center gap-1.5 border ${
                             isActive
                               ? "bg-matcha-600 border-matcha-600 text-white"
-                              : "bg-white border-stone-200 text-stone-700 hover:bg-matcha-100 hover:border-matcha-500/40 hover:text-matcha-600"
+                              : "bg-white dark:bg-stone-800 border-stone-200 dark:border-stone-700 text-stone-700 dark:text-stone-300 hover:bg-matcha-100 dark:hover:bg-matcha-900/40 hover:border-matcha-500/40 hover:text-matcha-600 dark:hover:text-[#6baef2]"
                           }`}
                         >
                           Launch Tool
@@ -593,10 +754,10 @@ export default function App() {
                 })}
               </div>
             ) : (
-              <div className="p-12 text-center bg-white border border-stone-200 rounded-3xl">
+              <div className="p-12 text-center bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-3xl">
                 <Coffee className="w-12 h-12 text-stone-300 mx-auto mb-3" />
-                <h4 className="text-sm font-bold text-stone-800">No Web Tools Found</h4>
-                <p className="text-xs text-stone-500 mt-1 max-w-xs mx-auto">
+                <h4 className="text-sm font-bold text-stone-800 dark:text-stone-200">No Web Tools Found</h4>
+                <p className="text-xs text-stone-500 dark:text-stone-400 mt-1 max-w-xs mx-auto">
                   Try refining your search text or select a different category filter from the menu.
                 </p>
                 <button
@@ -605,7 +766,7 @@ export default function App() {
                     setSearchTerm("");
                     setSelectedCategory("All");
                   }}
-                  className="mt-4 px-4 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-xl text-xs font-bold transition-colors"
+                  className="mt-4 px-4 py-2 bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-300 rounded-xl text-xs font-bold transition-colors"
                 >
                   Clear Filters
                 </button>
@@ -625,40 +786,66 @@ export default function App() {
             {/* Conditional Sidebar Ad banner (Strict Rule: hidden if empty) */}
             <AdContainer adValue={ads.sidebar} slotName="sidebar" />
 
-            {/* Aesthetic Matcha Teas Info Block */}
-            <div className="bg-white p-5 rounded-2xl border border-stone-200 shadow-xs space-y-4">
-              <h4 className="text-xs font-extrabold uppercase tracking-widest text-matcha-600 border-b border-stone-100 pb-2 flex items-center gap-2">
-                <Sparkles className="w-4 h-4" />
-                The Way of Tea
-              </h4>
-              <div className="space-y-3.5">
-                <div className="space-y-1">
-                  <span className="block text-xs font-bold text-stone-800">Matcha Focus</span>
-                  <p className="text-[11px] text-stone-500 leading-relaxed font-medium">
-                    Unlike coffee's rapid spike and crash, Matcha contains L-Theanine, which promotes focused, calm concentration over hours. Perfect for deep sessions.
-                  </p>
+
+
+            {/* Daily Click Tracker Widget */}
+            <div className="bg-white dark:bg-stone-900 p-5 rounded-2xl border border-stone-200 dark:border-stone-800 shadow-xs space-y-4">
+              <div className="flex items-center justify-between border-b border-stone-100 dark:border-stone-800 pb-2">
+                <h4 className="text-xs font-extrabold uppercase tracking-widest text-matcha-600 dark:text-[#6baef2] flex items-center gap-2">
+                  <MousePointerClick className="w-4 h-4 text-matcha-600 animate-pulse" />
+                  Daily Click Tracker
+                </h4>
+                <div className="flex items-center gap-1 bg-stone-100 dark:bg-stone-950 px-2.5 py-1 rounded-lg text-[10px] text-stone-500 dark:text-stone-400 font-bold font-mono border border-stone-200/10 dark:border-stone-800/60">
+                  <Calendar className="w-3 h-3 text-stone-400" />
+                  {clickDate || getTodayDateString()}
                 </div>
-                <div className="space-y-1">
-                  <span className="block text-xs font-bold text-stone-800">Mindful Breaks</span>
-                  <p className="text-[11px] text-stone-500 leading-relaxed font-medium">
-                    Take 5-minute pauses between web tasks. Close your eyes, inhale the steam, and stretch. Re-oxygenating increases efficiency.
-                  </p>
+              </div>
+
+              <div className="space-y-3">
+                <div className="p-3 bg-matcha-50/60 dark:bg-matcha-950/20 rounded-xl border border-matcha-100/50 dark:border-matcha-850/40 flex items-center justify-between">
+                  <div>
+                    <span className="block text-[11px] font-semibold text-stone-500 dark:text-stone-400 uppercase tracking-wide">Total Site Clicks Today</span>
+                    <span className="text-[10px] text-stone-400 dark:text-stone-500 font-medium">All visitors' collective interactions</span>
+                  </div>
+                  <div 
+                    key={globalClicks} 
+                    className="text-2xl font-extrabold font-mono text-matcha-700 dark:text-[#6baef2] bg-white dark:bg-stone-950 px-3.5 py-1.5 rounded-xl shadow-xs border border-matcha-200/40 dark:border-stone-850 animate-fade-in"
+                  >
+                    {globalClicks}
+                  </div>
                 </div>
+
+                <div className="p-3 bg-[#eef5fa]/80 dark:bg-stone-950 rounded-xl border border-[#d6e6f2]/40 dark:border-stone-850/40 flex items-center justify-between">
+                  <div>
+                    <span className="block text-[11px] font-semibold text-stone-500 dark:text-stone-400 uppercase tracking-wide">Your Contributions</span>
+                    <span className="text-[10px] text-stone-400 dark:text-stone-500 font-medium">Your clicks in this browser</span>
+                  </div>
+                  <div 
+                    key={personalClicks} 
+                    className="text-lg font-bold font-mono text-[#2a6f97] dark:text-[#a0ccf7] bg-white dark:bg-stone-950 px-3 py-1 rounded-lg border border-[#a0ccf7]/30 dark:border-stone-850 animate-fade-in"
+                  >
+                    {personalClicks}
+                  </div>
+                </div>
+                
+                <p className="text-[10px] text-stone-400 dark:text-stone-500 leading-normal text-center italic font-medium bg-stone-50 dark:bg-stone-950 py-1.5 px-2.5 rounded-lg border border-stone-100 dark:border-stone-800/40">
+                  Rozana raat 12 baje ye clicks zero (0) par auto-reset ho jate hain!
+                </p>
               </div>
             </div>
 
             {/* Quick Stats Panel */}
-            <div className="bg-matcha-100 p-5 rounded-2xl border border-stone-200/50 space-y-3">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-matcha-600 flex items-center gap-1.5">
+            <div className="bg-matcha-100 dark:bg-matcha-950/20 p-5 rounded-2xl border border-stone-200/50 dark:border-stone-850/60 space-y-3">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-matcha-600 dark:text-[#6baef2] flex items-center gap-1.5">
                 <Wrench className="w-4 h-4" /> System Stats
               </h4>
               <div className="grid grid-cols-2 gap-3 text-center">
-                <div className="p-2.5 bg-white rounded-xl border border-stone-200/40">
-                  <span className="block text-lg font-bold font-mono text-stone-800">{tools.length}</span>
+                <div className="p-2.5 bg-white dark:bg-stone-950 rounded-xl border border-stone-200/40 dark:border-stone-850">
+                  <span className="block text-lg font-bold font-mono text-stone-800 dark:text-stone-200">{tools.length}</span>
                   <span className="text-[9px] font-semibold text-stone-400 uppercase tracking-wider">Total Tools</span>
                 </div>
-                <div className="p-2.5 bg-white rounded-xl border border-stone-200/40">
-                  <span className="block text-lg font-bold font-mono text-stone-800">
+                <div className="p-2.5 bg-white dark:bg-stone-950 rounded-xl border border-stone-200/40 dark:border-stone-850">
+                  <span className="block text-lg font-bold font-mono text-stone-800 dark:text-stone-200">
                     {tools.filter(t => t.embedUrl.startsWith("builtin:")).length}
                   </span>
                   <span className="text-[9px] font-semibold text-stone-400 uppercase tracking-wider">Built-In</span>

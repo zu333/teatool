@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@variant dark (&:where(.dark, .dark *));
+
 @theme {
   --font-sans: "Inter", "Outfit", system-ui, sans-serif;
   --font-mono: "JetBrains Mono", monospace;
@@ -80,6 +82,537 @@
 
 /* Background patterns */
 .pattern-tea-dots {
-  background-image: radial-gradient(#b0d0e7 0.75px, transparent 0.75px);
-  background-size: 16px 16px;
+  background-image: radial-gradient(rgba(59, 130, 246, 0.15) 1px, transparent 1px);
+  background-size: 18px 18px;
 }
+
+.dark .pattern-tea-dots {
+  background-image: radial-gradient(rgba(96, 165, 250, 0.1) 1px, transparent 1px);
+  background-size: 18px 18px;
+}
+
+/* Global App Blue Theme Overrides - Light Mode */
+body {
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 50%, #dbeafe 100%) !important;
+  color: #0f172a !important;
+}
+
+/* Base tool container styling */
+.bg-white,
+.bg-\[\#fcfbf9\],
+.bg-white\/80 {
+  background-color: #ffffff !important;
+  border: 2px solid #93c5fd !important; /* Rich blue-300 border for high definition */
+  box-shadow: 0 10px 30px -5px rgba(59, 130, 246, 0.12), 0 8px 12px -6px rgba(59, 130, 246, 0.12) !important;
+  border-radius: 1.25rem !important; /* rounded-2xl */
+}
+
+/* Keep cards highly professional and glowing with colorful accents */
+.bg-white:hover,
+.bg-\[\#fcfbf9\]:hover {
+  border-color: #3b82f6 !important; /* blue-500 hover border */
+  box-shadow: 0 15px 35px -5px rgba(59, 130, 246, 0.18), 0 10px 15px -6px rgba(59, 130, 246, 0.18) !important;
+  transform: translateY(-2px);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Large, legible text overrides for Tool Boxes ("thora bara karo likha nazar nahi aata") */
+input, textarea, select {
+  font-size: 14px !important; /* 14px is highly legible on all devices */
+  line-height: 1.55 !important;
+  font-weight: 500 !important;
+  color: #0f172a !important;
+  background-color: #f8fafc !important; /* slate-50 background for contrast */
+  border: 1.5px solid #cbd5e1 !important; /* slate-300 border */
+  padding: 0.75rem 1rem !important; /* spacious padding */
+  border-radius: 0.75rem !important; /* rounded-xl */
+  transition: all 0.2s ease-in-out;
+}
+
+input:focus, textarea:focus, select:focus {
+  border-color: #3b82f6 !important; /* active blue border */
+  background-color: #ffffff !important;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15) !important;
+  outline: none !important;
+}
+
+/* Label text: Bolder and highly readable */
+label, .text-xs.font-semibold.uppercase {
+  font-size: 12.5px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.05em !important;
+  color: #1e3a8a !important; /* deep royal blue label */
+  display: inline-block !important;
+  margin-bottom: 0.5rem !important;
+}
+
+/* Large and high contrast code elements */
+code, pre, .font-mono {
+  font-size: 13.5px !important;
+  font-family: "JetBrains Mono", monospace !important;
+  font-weight: 500 !important;
+  line-height: 1.6 !important;
+}
+
+/* Headers & titles in toolboxes: More colorful & larger! */
+h3, .text-xl {
+  font-size: 1.4rem !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.02em !important;
+  background: linear-gradient(135deg, #1d4ed8 0%, #0284c7 50%, #0369a1 100%) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+}
+
+/* Paragraphs & subtext: larger and very clear */
+p, .text-stone-500, .text-stone-600 {
+  font-size: 13.5px !important;
+  color: #334155 !important; /* slate-700 for perfect contrast and accessibility */
+  line-height: 1.6 !important;
+}
+
+/* Beautiful custom tab selectors in light mode */
+.bg-stone-100 {
+  background-color: #eff6ff !important; /* light sky blue */
+  border: 1px solid #bfdbfe !important; /* border-blue-200 */
+}
+
+/* Dark Mode Global Overrides - Royal Sapphire Space Theme */
+.dark {
+  color-scheme: dark;
+}
+
+.dark body {
+  background: linear-gradient(135deg, #020617 0%, #0b1528 40%, #172554 100%) !important;
+  color: #f1f5f9 !important;
+}
+
+/* Dark Mode card/box colors */
+.dark .bg-white,
+.dark .bg-\[\#fcfbf9\],
+.dark .bg-white\/80 {
+  background-color: #0f172a !important; /* dark slate-900 */
+  border: 2px solid #2563eb !important; /* rich blue border */
+  box-shadow: 0 10px 30px -5px rgba(37, 99, 235, 0.25), 0 8px 12px -6px rgba(37, 99, 235, 0.25) !important;
+}
+
+.dark .bg-white:hover,
+.dark .bg-\[\#fcfbf9\]:hover {
+  border-color: #60a5fa !important; /* light blue-400 border */
+  box-shadow: 0 15px 40px -5px rgba(37, 99, 235, 0.35), 0 10px 15px -6px rgba(37, 99, 235, 0.35) !important;
+}
+
+/* Dark Mode Form Inputs */
+.dark input,
+.dark textarea,
+.dark select {
+  background-color: #1e293b !important; /* slate-800 input background */
+  color: #f8fafc !important;
+  border: 1.5px solid #334155 !important;
+}
+
+.dark input:focus,
+.dark textarea:focus,
+.dark select:focus {
+  border-color: #60a5fa !important;
+  background-color: #0f172a !important;
+  box-shadow: 0 0 0 4px rgba(96, 165, 250, 0.25) !important;
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: #94a3b8 !important; /* lighter placeholder */
+}
+
+/* Dark Mode Labels and texts */
+.dark label, .dark .text-xs.font-semibold.uppercase {
+  color: #60a5fa !important; /* bright sky blue labels */
+}
+
+.dark .text-stone-950,
+.dark .text-stone-900,
+.dark .text-stone-800,
+.dark .text-stone-700,
+.dark .text-stone-900\/80 {
+  color: #f8fafc !important; /* High contrast text in dark mode */
+}
+
+.dark .text-stone-600,
+.dark .text-stone-500 {
+  color: #cbd5e1 !important; /* Light text secondary */
+}
+
+.dark .text-stone-400 {
+  color: #94a3b8 !important; /* Muted text */
+}
+
+.dark .text-stone-300 {
+  color: #e2e8f0 !important; /* Light text tertiary */
+}
+
+/* Base bg and border overrides for stone utility classes inside dark mode components */
+.dark .bg-stone-50,
+.dark .bg-stone-50\/50,
+.dark .bg-stone-50\/60,
+.dark .bg-\[\#eef5fa\],
+.dark .bg-\[\#eef5fa\]\/80 {
+  background-color: #1e293b !important; /* Slate 800 input/panel container background */
+}
+
+.dark .bg-stone-100 {
+  background-color: #334155 !important; /* Slate 700 background */
+  border-color: #475569 !important;
+}
+
+.dark .divide-stone-100 > *,
+.dark .border-stone-100,
+.dark .border-stone-200 {
+  border-color: #334155 !important;
+}
+
+.dark h3, .dark .text-xl {
+  background: linear-gradient(135deg, #60a5fa 0%, #38bdf8 50%, #93c5fd 100%) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+}
+
+.dark p, .dark .text-stone-500, .dark .text-stone-600, .dark .text-stone-400 {
+  color: #cbd5e1 !important; /* clear slate-300 contrast */
+}
+
+/* Form input adjustments in specific states */
+.dark button:disabled {
+  opacity: 0.45;
+}
+
+/* Category pills in light and dark mode: colorful and active! */
+.bg-white.text-matcha-600 {
+  background-color: #2563eb !important; /* royal blue background for active */
+  color: #ffffff !important;
+  border-color: #2563eb !important;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2) !important;
+}
+
+.dark .bg-white.text-matcha-600 {
+  background-color: #3b82f6 !important; /* brighter blue in dark mode */
+  color: #ffffff !important;
+  border-color: #3b82f6 !important;
+  box-shadow: 0 4px 14px rgba(59, 130, 246, 0.3) !important;
+}
+
+/* Launch tool buttons */
+.bg-white.border-stone-200 {
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+  border: 1px solid #cbd5e1 !important;
+}
+
+.bg-white.border-stone-200:hover {
+  background-color: #f1f5f9 !important;
+  border-color: #3b82f6 !important;
+}
+
+.dark .bg-white.border-stone-200 {
+  background-color: #1e293b !important;
+  color: #f1f5f9 !important;
+  border: 1px solid #334155 !important;
+}
+
+.dark .bg-white.border-stone-200:hover {
+  background-color: #334155 !important;
+  border-color: #60a5fa !important;
+}
+
+/* Sub-panels inside active tools: matching backgrounds */
+.bg-matcha-100 {
+  background-color: #eff6ff !important; /* soft blue-50 */
+  border-color: #bfdbfe !important;
+}
+
+.dark .bg-matcha-100 {
+  background-color: rgba(30, 58, 138, 0.25) !important; /* dark transparent sapphire */
+  border-color: rgba(96, 165, 250, 0.2) !important;
+}
+
+/* Custom gorgeous background for Active Tool Workspace Panel */
+#active-tool-workspace {
+  background: linear-gradient(135deg, #ffffff 0%, #f0f7ff 100%) !important;
+  border: 2px solid #3b82f6 !important; /* high-focus royal blue border */
+  box-shadow: 0 20px 40px -15px rgba(59, 130, 246, 0.2) !important;
+  border-radius: 1.5rem !important;
+}
+
+.dark #active-tool-workspace {
+  background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%) !important; /* beautiful galaxy dark indigo */
+  border: 2px solid #60a5fa !important;
+  box-shadow: 0 20px 40px -15px rgba(96, 165, 250, 0.3) !important;
+}
+
+/* Large premium buttons */
+button.px-4.py-2.bg-matcha-600,
+button.bg-matcha-600,
+button.bg-\[\#556B2F\],
+button.bg-\[\#7A9A60\] {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  font-size: 13.5px !important;
+  border-radius: 0.75rem !important;
+  padding: 0.65rem 1.25rem !important;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25) !important;
+  transition: all 0.2s ease;
+}
+
+button.px-4.py-2.bg-matcha-600:hover,
+button.bg-matcha-600:hover {
+  background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%) !important;
+  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.35) !important;
+  transform: translateY(-1px);
+}
+
+.dark button.px-4.py-2.bg-matcha-600,
+.dark button.bg-matcha-600 {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
+  box-shadow: 0 4px 14px rgba(59, 130, 246, 0.35) !important;
+}
+
+.dark button.px-4.py-2.bg-matcha-600:hover,
+.dark button.bg-matcha-600:hover {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.45) !important;
+}
+
+/* Adjust overlay and card shadows */
+.dark .shadow-xs,
+.dark .shadow-sm,
+.dark .shadow-md {
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4), 0 8px 10px -6px rgba(0, 0, 0, 0.4) !important;
+}
+
+/* Styling for nested sub-cards inside toolboxes to look highly polished and colorful! */
+#active-tool-workspace .bg-white.border.border-stone-200.rounded-xl,
+#active-tool-workspace .bg-white.border.rounded-xl,
+#active-tool-workspace .bg-white.border {
+  background-color: #f0f7ff !important; /* extremely beautiful soft sky blue tint */
+  border: 1.5px solid #bfdbfe !important; /* soft sky-200 border */
+  border-radius: 0.75rem !important; /* standard rounded-xl */
+  box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.05) !important;
+}
+
+.dark #active-tool-workspace .bg-white.border.border-stone-200.rounded-xl,
+.dark #active-tool-workspace .bg-white.border.rounded-xl,
+.dark #active-tool-workspace .bg-white.border {
+  background-color: #1e293b !important; /* slate-800 */
+  border: 1.5px solid #334155 !important;
+  border-radius: 0.75rem !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* Make analytics values bigger and extremely readable */
+#active-tool-workspace .text-2xl.font-mono {
+  font-size: 1.75rem !important;
+  font-weight: 800 !important;
+  color: #2563eb !important; /* royal blue numbers! */
+}
+
+.dark #active-tool-workspace .text-2xl.font-mono {
+  color: #60a5fa !important; /* luminous sky blue numbers! */
+}
+
+/* Style smaller operation buttons inside tool containers */
+#active-tool-workspace button.bg-stone-50,
+#active-tool-workspace button.bg-white:not(.bg-matcha-600) {
+  background-color: #eff6ff !important; /* soft blue-50 */
+  color: #1d4ed8 !important; /* blue-700 text */
+  border: 1.5px solid #bfdbfe !important; /* blue-200 border */
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  border-radius: 0.5rem !important;
+  padding: 0.5rem 0.85rem !important;
+  transition: all 0.2s ease;
+}
+
+#active-tool-workspace button.bg-stone-50:hover,
+#active-tool-workspace button.bg-white:not(.bg-matcha-600):hover {
+  background-color: #dbeafe !important; /* soft blue-100 */
+  border-color: #3b82f6 !important;
+  color: #1e40af !important;
+  transform: scale(1.02);
+}
+
+.dark #active-tool-workspace button.bg-stone-50,
+.dark #active-tool-workspace button.bg-white:not(.bg-matcha-600) {
+  background-color: #1e293b !important; /* slate-800 */
+  color: #93c5fd !important; /* light sky blue text */
+  border: 1.5px solid #334155 !important;
+}
+
+.dark #active-tool-workspace button.bg-stone-50:hover,
+.dark #active-tool-workspace button.bg-white:not(.bg-matcha-600):hover {
+  background-color: #334155 !important;
+  border-color: #60a5fa !important;
+  color: #ffffff !important;
+}
+
+/* Custom robust styles for the Admin Panel Drawer to look absolutely spectacular, super high contrast, and perfectly colorful! */
+#admin-main-panel-drawer {
+  background-color: #f8fafc !important; /* extremely clean slate-50 in light mode */
+  color: #0f172a !important; /* high-contrast dark text */
+}
+
+.dark #admin-main-panel-drawer {
+  background-color: #0f172a !important; /* extremely rich dark slate-900 in dark mode */
+  color: #f8fafc !important;
+}
+
+/* Force perfect card styling inside Admin Drawer */
+#admin-main-panel-drawer .bg-white {
+  background-color: #ffffff !important;
+  border: 1.5px solid #cbd5e1 !important; /* soft slate-300 border for crisp light mode */
+  border-radius: 1rem !important;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.03) !important;
+  padding: 1.5rem !important;
+}
+
+.dark #admin-main-panel-drawer .bg-white {
+  background-color: #1e293b !important; /* deep charcoal/slate-800 card in dark mode */
+  border: 1.5px solid #334155 !important; /* deep border */
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* Force perfect label and text visibility inside Admin Panel */
+#admin-main-panel-drawer label,
+#admin-auth-panel label {
+  color: #1e3a8a !important; /* deep royal blue in light mode */
+  font-weight: 700 !important;
+  font-size: 13px !important;
+  text-transform: none !important;
+  background: none !important;
+  -webkit-text-fill-color: initial !important;
+  margin-bottom: 0.5rem !important;
+}
+
+.dark #admin-main-panel-drawer label,
+.dark #admin-auth-panel label {
+  color: #60a5fa !important; /* luminous blue in dark mode */
+  background: none !important;
+  -webkit-text-fill-color: initial !important;
+}
+
+/* Force perfect heading visibility inside Admin Panel */
+#admin-main-panel-drawer h3 {
+  font-size: 15px !important;
+  font-weight: 800 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  background: linear-gradient(135deg, #1d4ed8 0%, #0284c7 100%) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  border-bottom: 2.5px solid #e2e8f0 !important;
+  padding-bottom: 0.5rem !important;
+  margin-bottom: 1.25rem !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+}
+
+.dark #admin-main-panel-drawer h3 {
+  background: linear-gradient(135deg, #60a5fa 0%, #38bdf8 100%) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  border-bottom: 2.5px solid #334155 !important;
+}
+
+/* Scrollable background grid pattern */
+#admin-main-panel-drawer .pattern-tea-dots {
+  background-image: radial-gradient(rgba(59, 130, 246, 0.15) 1.5px, transparent 1.5px) !important;
+  background-size: 20px 20px !important;
+}
+
+.dark #admin-main-panel-drawer .pattern-tea-dots {
+  background-image: radial-gradient(rgba(96, 165, 250, 0.12) 1.5px, transparent 1.5px) !important;
+}
+
+/* Inputs and textareas inside Admin Panel */
+#admin-main-panel-drawer input,
+#admin-main-panel-drawer textarea,
+#admin-main-panel-drawer select,
+#admin-auth-panel input {
+  background-color: #f8fafc !important; /* light gray input */
+  color: #0f172a !important;
+  border: 1.5px solid #cbd5e1 !important;
+  border-radius: 0.75rem !important;
+  padding: 0.65rem 0.85rem !important;
+  font-size: 13.5px !important;
+}
+
+.dark #admin-main-panel-drawer input,
+.dark #admin-main-panel-drawer textarea,
+.dark #admin-main-panel-drawer select,
+.dark #admin-auth-panel input {
+  background-color: #0f172a !important; /* dark slate input */
+  color: #f8fafc !important;
+  border: 1.5px solid #334155 !important;
+}
+
+/* Active Thumbnail / Sub-container colors */
+#admin-main-panel-drawer .bg-stone-50 {
+  background-color: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+}
+
+.dark #admin-main-panel-drawer .bg-stone-50 {
+  background-color: #1f2937 !important;
+  border-color: #374151 !important;
+}
+
+#admin-main-panel-drawer .text-stone-400 {
+  color: #64748b !important; /* slate-500 */
+}
+
+.dark #admin-main-panel-drawer .text-stone-400 {
+  color: #94a3b8 !important; /* slate-400 */
+}
+
+#admin-main-panel-drawer .text-stone-600 {
+  color: #334155 !important; /* slate-700 */
+}
+
+.dark #admin-main-panel-drawer .text-stone-600 {
+  color: #cbd5e1 !important; /* slate-300 */
+}
+
+#admin-main-panel-drawer .text-stone-500 {
+  color: #475569 !important; /* slate-600 */
+}
+
+.dark #admin-main-panel-drawer .text-stone-500 {
+  color: #94a3b8 !important; /* slate-400 */
+}
+
+/* Admin password panel modal (Lock modal) */
+#admin-auth-panel .bg-white {
+  background-color: #ffffff !important;
+  border: 2px solid #3b82f6 !important;
+  border-radius: 1.5rem !important;
+  box-shadow: 0 25px 50px -12px rgba(59, 130, 246, 0.25) !important;
+}
+
+.dark #admin-auth-panel .bg-white {
+  background-color: #0f172a !important;
+  border: 2px solid #2563eb !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5) !important;
+}
+
+#admin-auth-panel h3.text-stone-900 {
+  color: #0f172a !important;
+  font-weight: 800 !important;
+}
+
+.dark #admin-auth-panel h3.text-stone-900 {
+  color: #f8fafc !important;
+}
+

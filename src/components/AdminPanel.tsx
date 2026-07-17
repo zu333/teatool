@@ -578,7 +578,7 @@ export default function AdminPanel({
   // Dashboard Panel Render
   return (
     <div id="admin-main-panel" className="fixed inset-0 bg-stone-900/40 backdrop-blur-xs flex justify-end z-50">
-      <div className="bg-[#fcfbf9] w-full max-w-4xl h-full flex flex-col shadow-2xl border-l border-stone-200 animate-slide-in overflow-hidden">
+      <div id="admin-main-panel-drawer" className="bg-slate-50 dark:bg-slate-950 w-full max-w-4xl h-full flex flex-col shadow-2xl border-l border-slate-200 dark:border-slate-800 animate-slide-in overflow-hidden text-slate-900 dark:text-slate-100">
         
         {/* Header bar */}
         <div className="px-6 py-4 bg-stone-800 text-white flex justify-between items-center shrink-0">
